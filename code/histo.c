@@ -1,7 +1,7 @@
 #include "Biblio_lin.h"
 typedef struct Avl{
     char id[20];
-    int v;
+    float v;
     int eq;
     struct Avl* fg;
     struct Avl* fd;
@@ -22,21 +22,21 @@ int researche(A a, char* id){
         return researche(a->fg, id);
     }
 }
-int min(int a, int b){
+float min(float a, float b){
     if(a<b){
         return a;
     }
     return b;
 }
-int max(int a, int b){
+float max(float a, float b){
     if(a>b){
         return a;
     }
     return b;
 }
-A crea_noeud(int val, char* id){
+A crea_noeud(float val, char* id, float fuite){
     A new=malloc(sizeof(Avl));
-    new->v=val;
+    new->v=val*((100.0-fuite)/100.0);
     new->eq=0;
     for(int i=0;i<20;i++){
         new->id[i]=id[i];
@@ -108,19 +108,19 @@ A equilibrerAVL(A a) {
     }
     return a;
 }
-A insertionAVL(A a, char* id, int val, int *h) {
+A insertionAVL(A a, char* id, float val, float fuite, int *h) {
     if(a == NULL){
         *h = 1;
-        return crea_noeud(val, id);
+        return crea_noeud(val, id, fuite);
     }
 
     int cmp = strcmp(id, a->id);
     if(cmp < 0){
-        a->fg = insertionAVL(a->fg, id, val, h);
+        a->fg = insertionAVL(a->fg, id, val, fuite, h);
         *h = -*h;
     } 
     else if (cmp > 0){
-        a->fd = insertionAVL(a->fd, id, val, h);
+        a->fd = insertionAVL(a->fd, id, val, fuite, h);
     } 
     else{
         a->v += val; 
@@ -143,7 +143,7 @@ A insertionAVL(A a, char* id, int val, int *h) {
 void afficherInfixe(A a) {
     if (a != NULL) {
         afficherInfixe(a->fg);
-        printf("ID: %s (Val: %d, Eq: %d)\n", a->id, a->v, a->eq);
+        printf("ID: %s (Val: %f, Eq: %d)\n", a->id, a->v, a->eq);
         afficherInfixe(a->fd);
     }
 }
@@ -151,28 +151,30 @@ void write_Infixe(A a, FILE* name, FILE* val){
     if (a != NULL) {
         write_Infixe(a->fg, name, val);
         fprintf(name, "%s\n", a->id); 
-        fprintf(val, "%d\n", a->v);
+        fprintf(val, "%f\n", a->v);
         write_Infixe(a->fd, name, val);
     }
 }
 int main(){
     FILE *nom = fopen("tests/histo_nom.txt", "r");
     FILE *val = fopen("tests/histo_quantite.txt", "r");
+    FILE *fuite = fopen("tests/histo_fuite.txt", "r");
     FILE *result_nom = fopen("tests/histo_nom_result.txt", "w");
     FILE *result_val = fopen("tests/histo_quantite_result.txt", "w");
     if(nom == NULL || val == NULL){
         printf("Erreur d'ouverture des fichiers.\n");
         return 1;
     }
-    int nb;
+    float nb;
     char id[20];
     A avl = NULL;
     int h = 0;
-    while (fscanf(val, "%d", &nb) == 1) {
+    float fuites;
+    while(fscanf(val, "%f", &nb) == 1 && fscanf(fuite, "%f", &fuites) == 1) {
         fgets(id, 19, nom);
         id[strcspn(id, "\n")] = 0; 
         id[strcspn(id, "\r")] = 0; 
-        avl = insertionAVL(avl, id, nb, &h);
+        avl = insertionAVL(avl, id, nb, fuites, &h);
     }   
     afficherInfixe(avl);
     write_Infixe(avl, result_nom, result_val);
